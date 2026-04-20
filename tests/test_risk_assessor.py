@@ -46,3 +46,21 @@ def test_missing_return_is_penalized():
     )
     assert risk["score"] < 100
     assert any("Return" in r or "return" in r for r in risk["reasons"])
+
+
+def test_autofix_requires_strong_confidence_threshold():
+    original = "def f():\n    return 1\n"
+    fixed = "def f():\n    return 1\n"
+    issues = [
+        {"type": "Code Quality", "severity": "Low", "msg": "msg1"},
+        {"type": "Code Quality", "severity": "Low", "msg": "msg2"},
+        {"type": "Code Quality", "severity": "Low", "msg": "msg3"},
+        {"type": "Code Quality", "severity": "Low", "msg": "msg4"},
+        {"type": "Code Quality", "severity": "Low", "msg": "msg5"},
+    ]
+
+    risk = assess_risk(original_code=original, fixed_code=fixed, issues=issues)
+
+    assert risk["level"] == "low"
+    assert risk["score"] == 75
+    assert risk["should_autofix"] is False

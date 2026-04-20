@@ -47,3 +47,22 @@ def test_mock_client_forces_llm_fallback_to_heuristics_for_analysis():
     assert any(issue.get("type") == "Code Quality" for issue in result["issues"])
     # Ensure we logged the fallback path
     assert any("Falling back to heuristics" in entry.get("message", "") for entry in result["logs"])
+
+
+def test_llm_empty_analysis_falls_back_when_heuristics_find_obvious_issues():
+    class EmptyAnalysisClient:
+        def complete(self, system_prompt: str, user_prompt: str) -> str:
+            if "Return ONLY valid JSON" in system_prompt:
+                return "[]"
+            return "def f():\n    return True\n"
+
+    agent = BugHoundAgent(client=EmptyAnalysisClient())
+    code = "def f():\n    print('hi')\n    return True\n"
+
+    result = agent.run(code)
+
+    assert any(issue.get("type") == "Code Quality" for issue in result["issues"])
+    assert any(
+        "LLM returned no issues while heuristics found signals" in entry.get("message", "")
+        for entry in result["logs"]
+    )

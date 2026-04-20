@@ -107,3 +107,9 @@ You should see tests covering:
 * Risk scoring and guardrails
 * Heuristic fallbacks when LLM output is invalid
 * End-to-end agent workflow shape
+
+---
+
+## Week 9 Reflection Summary
+
+The core concept was learning that an agentic coding tool is a workflow, not just a model call, so analysis, action, testing, and reflection each need explicit logic. Students are most likely to struggle when model output looks plausible but does not match the strict structure the rest of the system expects, because fragile parsing can silently weaken decisions. AI was helpful for generating candidate issues and rewrite drafts quickly, but misleading when its output was overconfident, incomplete, or formatted in ways the agent could not safely consume. Reliability improved when deterministic guardrails were treated as first-class features, especially fallback behavior and conservative auto-fix thresholds. I would guide a student by asking them to trace one run end-to-end from logs to risk decision and identify the exact point where a bad output could pass through unchecked. That approach helps them reason about system behavior and safety without handing them the final code change.

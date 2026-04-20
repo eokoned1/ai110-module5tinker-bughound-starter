@@ -82,6 +82,14 @@ class BugHoundAgent:
             self._log("ANALYZE", "LLM output was not parseable JSON. Falling back to heuristics.")
             return self._heuristic_analyze(code_snippet)
 
+        # Guardrail: if model claims "no issues" but heuristics detect obvious patterns,
+        # prefer the deterministic fallback to reduce false negatives.
+        if not issues:
+            heuristic_issues = self._heuristic_analyze(code_snippet)
+            if heuristic_issues:
+                self._log("ANALYZE", "LLM returned no issues while heuristics found signals. Falling back to heuristics.")
+                return heuristic_issues
+
         return issues
 
     def propose_fix(self, code_snippet: str, issues: List[Dict[str, str]]) -> str:
@@ -187,14 +195,24 @@ class BugHoundAgent:
 
     def _normalize_issues(self, arr: List[Any]) -> List[Dict[str, str]]:
         issues: List[Dict[str, str]] = []
+        allowed_severity = {"low", "medium", "high"}
         for item in arr:
             if not isinstance(item, dict):
                 continue
+            msg = str(item.get("msg", "")).strip()
+            if not msg:
+                continue
+            severity = str(item.get("severity", "Unknown")).strip()
+            severity_lower = severity.lower()
+            if severity_lower in allowed_severity:
+                severity = severity_lower.capitalize()
+            else:
+                severity = "Unknown"
             issues.append(
                 {
                     "type": str(item.get("type", "Issue")),
-                    "severity": str(item.get("severity", "Unknown")),
-                    "msg": str(item.get("msg", "")).strip(),
+                    "severity": severity,
+                    "msg": msg,
                 }
             )
         return issues

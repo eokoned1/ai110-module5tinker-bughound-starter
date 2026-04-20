@@ -80,7 +80,22 @@ def assess_risk(
     # ----------------------------
     # Auto-fix policy
     # ----------------------------
-    should_autofix = level == "low"
+    highest_detected_severity = "none"
+    for issue in issues:
+        sev = str(issue.get("severity", "")).lower()
+        if sev == "high":
+            highest_detected_severity = "high"
+            break
+        if sev == "medium" and highest_detected_severity != "high":
+            highest_detected_severity = "medium"
+        elif sev == "low" and highest_detected_severity == "none":
+            highest_detected_severity = "low"
+
+    # Be conservative: auto-fix only when risk is clearly low and issues are low-severity.
+    should_autofix = level == "low" and score >= 90 and highest_detected_severity in ("none", "low")
+
+    if not should_autofix:
+        reasons.append("Auto-fix withheld unless confidence is very high and findings are low-severity.")
 
     if not reasons:
         reasons.append("No significant risks detected.")
